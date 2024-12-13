@@ -1,10 +1,11 @@
 // src/App.js
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import Register from './components/Register';
+import Login from './components/Login';
+import ActivitiesList from './components/ActivitiesList';  // Import the ActivitiesList component
 
 function App() {
   return (
@@ -24,6 +25,8 @@ function App() {
               </div>
             } />
             <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/activities" element={<ActivitiesList />} />  {/* Add this route */}
           </Routes>
         </main>
         <Footer />

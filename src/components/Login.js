@@ -1,15 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
-function Register() {
+function Login() {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    email: ''
   });
 
   const [message, setMessage] = useState('');
-  const navigate = useNavigate(); // Initialize useNavigate
 
   const handleChange = (e) => {
     setFormData({
@@ -22,7 +19,7 @@ function Register() {
     e.preventDefault();
 
     try {
-      const response = await fetch('https://educations-castle-sunch.ondigitalocean.app/api/v1/users/register', {
+      const response = await fetch('https://educations-castle-sunch.ondigitalocean.app/api/v1/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,23 +29,27 @@ function Register() {
 
       if (response.ok) {
         const responseData = await response.json();
-        setMessage(`Registration successful: ${responseData.message}`);
-        navigate('/login'); // Redirect to login page
-      } else if (response.status === 400) {
-        const errorData = await response.json();
-        setMessage(`${errorData.error}`); // Display error message from API
+        // Save both access and refresh tokens locally using localStorage
+        localStorage.setItem('accessToken', responseData.access_token);
+        localStorage.setItem('refreshToken', responseData.refresh_token);
+        // Redirect to /activities
+        window.location.href = '/activities';
       } else {
         const errorData = await response.json();
-        setMessage(`Registration failed: ${errorData.message}`);
+        if (response.status === 400) {
+          setMessage(`Error: ${errorData.error}`);
+        } else {
+          setMessage(`Login failed: ${errorData.message}`);
+        }
       }
     } catch (error) {
-      setMessage(`Registration failed: ${error.message}`);
+      setMessage(`Login failed: ${error.message}`);
     }
   };
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded shadow-md">
-      <h2 className="text-2xl font-bold mb-4">Register</h2>
+      <h2 className="text-2xl font-bold mb-4">Login</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium">Username</label>
@@ -56,17 +57,6 @@ function Register() {
             type="text"
             name="username"
             value={formData.username}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border rounded"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
             onChange={handleChange}
             className="w-full px-3 py-2 border rounded"
             required
@@ -84,7 +74,7 @@ function Register() {
           />
         </div>
         <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded">
-          Register
+          Login
         </button>
       </form>
       {message && <p className="mt-4 text-center">{message}</p>}
@@ -92,4 +82,4 @@ function Register() {
   );
 }
 
-export default Register;
+export default Login;
