@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -9,7 +10,7 @@ function Register() {
   });
 
   const [message, setMessage] = useState('');
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -22,27 +23,22 @@ function Register() {
     e.preventDefault();
 
     try {
-      const response = await fetch('https://educations-castle-sunch.ondigitalocean.app/api/v1/users/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await axios.post('https://educations-castle-sunch.ondigitalocean.app/api/v1/users/register', formData);
 
-      if (response.ok) {
-        const responseData = await response.json();
-        setMessage(`Registration successful: ${responseData.message}`);
-        navigate('/login'); // Redirect to login page
+      if (response.status === 200) {
+        setMessage(`Registration successful: ${response.data.message}`);
+        navigate('/login');
       } else if (response.status === 400) {
-        const errorData = await response.json();
-        setMessage(`${errorData.error}`); // Display error message from API
+        setMessage(`${response.data.error}`);
       } else {
-        const errorData = await response.json();
-        setMessage(`Registration failed: ${errorData.message}`);
+        setMessage(`Registration failed: ${response.data.message}`);
       }
     } catch (error) {
-      setMessage(`Registration failed: ${error.message}`);
+      if (error.response) {
+        setMessage(`Registration failed: ${error.response.data.message || error.response.data.error}`);
+      } else {
+        setMessage(`Registration failed: ${error.message}`);
+      }
     }
   };
 

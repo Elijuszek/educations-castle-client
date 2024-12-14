@@ -1,27 +1,15 @@
-// src/components/NavBar.js
-
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { isAuthenticated, getRole, useHandleLogout } from '../utils/Auth';
 
 function NavBar() {
-  const navigate = useNavigate();
-
-  // Check if the user is logged in by checking the token in localStorage
-  const isLoggedIn = Boolean(localStorage.getItem('accessToken'));
-
-  const handleLogout = () => {
-    // Remove the access and refresh token from localStorage
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-
-    // Redirect to login page after logout
-    navigate('/login');
-  };
+  const isLoggedIn = isAuthenticated();
+  const userRole = getRole();
+  const handleLogout = useHandleLogout();
 
   return (
     <nav className="bg-blue-600 p-4 shadow-md">
       <div className="container mx-auto flex justify-between items-center">
-        {/* Left-side buttons */}
         <div className="flex space-x-4">
           <Link to="/" className="text-white font-semibold">
             Home
@@ -30,18 +18,28 @@ function NavBar() {
             Activities
           </Link>
         </div>
-        {/* Right-side buttons */}
         <div className="flex space-x-4">
-          {isLoggedIn ? (
-            // If logged in, show logout button and other user-specific links possibly
+          {isLoggedIn && userRole === 'administrator' && (
+            <Link to="/admin" className="text-white font-semibold">
+              Admin
+            </Link>
+          )}
+          {isLoggedIn && (userRole === 'organizer' || userRole === 'administrator') && (
+            <Link to="/organizer" className="text-white font-semibold">
+              Organizer
+            </Link>
+          )}
+          {isLoggedIn && (
             <>
+              <Link to="/profile" className="text-white font-semibold">
+                Profile
+              </Link>
               <button onClick={handleLogout} className="text-white font-semibold">
                 Logout
               </button>
-              {/* You can add other links for logged-in users here */}
             </>
-          ) : (
-            // If not logged in, show login and register links
+          )}
+          {!isLoggedIn && (
             <>
               <Link to="/login" className="text-white font-semibold">
                 Login

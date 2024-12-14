@@ -5,8 +5,9 @@ import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import Register from './components/Register';
 import Login from './components/Login';
-import ActivitiesList from './components/ActivitiesList';  // Import the ActivitiesList component
-
+import ActivitiesList from './components/ActivitiesList';
+import Admin from './components/Admin';
+import Organizer from './components/Organizer';
 function App() {
   return (
     <div className="App flex flex-col min-h-screen">
@@ -26,7 +27,9 @@ function App() {
             } />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/activities" element={<ActivitiesList />} />  {/* Add this route */}
+            <Route path="/activities" element={<ActivitiesList />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/organizer" element={<Organizer />} />
           </Routes>
         </main>
         <Footer />

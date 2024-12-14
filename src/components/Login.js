@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios'; // Import axios
+import { saveTokens } from '../utils/Auth';
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -7,6 +10,7 @@ function Login() {
   });
 
   const [message, setMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -19,31 +23,27 @@ function Login() {
     e.preventDefault();
 
     try {
-      const response = await fetch('https://educations-castle-sunch.ondigitalocean.app/api/v1/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await axios.post('https://educations-castle-sunch.ondigitalocean.app/api/v1/users/login', formData);
 
-      if (response.ok) {
-        const responseData = await response.json();
-        // Save both access and refresh tokens locally using localStorage
-        localStorage.setItem('accessToken', responseData.access_token);
-        localStorage.setItem('refreshToken', responseData.refresh_token);
+      if (response.status === 200) {
+        const responseData = response.data;
+        // Use saveTokens function to save tokens
+        saveTokens(responseData.access_token, responseData.refresh_token);
         // Redirect to /activities
-        window.location.href = '/activities';
+        navigate('/activities');
       } else {
-        const errorData = await response.json();
-        if (response.status === 400) {
-          setMessage(`Error: ${errorData.error}`);
-        } else {
-          setMessage(`Login failed: ${errorData.message}`);
-        }
+        setMessage(`Login failed: ${response.data.message}`);
       }
     } catch (error) {
-      setMessage(`Login failed: ${error.message}`);
+      if (error.response) {
+        if (error.response.status === 400) {
+          setMessage(`Error: ${error.response.data.error}`);
+        } else {
+          setMessage(`Login failed: ${error.response.data.message}`);
+        }
+      } else {
+        setMessage(`Login failed: ${error.message}`);
+      }
     }
   };
 
