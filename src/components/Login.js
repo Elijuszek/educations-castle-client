@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; // Import axios
+import axios from 'axios';
 import { saveTokens } from '../utils/Auth';
+import { toast } from 'react-toastify';
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -11,6 +12,15 @@ function Login() {
 
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check and show notification if set in local storage
+    const notification = localStorage.getItem('notification');
+    if (notification) {
+      toast.success(notification);
+      localStorage.removeItem('notification'); 
+    }
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -27,10 +37,8 @@ function Login() {
 
       if (response.status === 200) {
         const responseData = response.data;
-        // Use saveTokens function to save tokens
         saveTokens(responseData.access_token, responseData.refresh_token);
-        // Redirect to /activities
-        navigate('/activities');
+        navigate('/activities'); // Redirect to /activities
       } else {
         setMessage(`Login failed: ${response.data.message}`);
       }
@@ -77,7 +85,7 @@ function Login() {
           Login
         </button>
       </form>
-      {message && <p className="mt-4 text-center">{message}</p>}
+      {message && <p className="mt-4 text-center text-red-600">{message}</p>}
     </div>
   );
 }

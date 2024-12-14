@@ -1,3 +1,4 @@
+// Auth.js
 import { jwtDecode } from 'jwt-decode'; // Ensure proper importing of jwtDecode
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -25,6 +26,20 @@ export function getRole() {
   }
 }
 
+// New function to get UserID
+export function getUserID() {
+  const token = localStorage.getItem('accessToken');
+  if (!token || isTokenExpired(token)) return null;
+
+  try {
+    const decoded = jwtDecode(token);
+    return decoded.userID;
+  } catch (error) {
+    console.error('Error decoding token:', error);
+    return null;
+  }
+}
+
 export function isAuthenticated() {
   const token = localStorage.getItem('accessToken');
   return Boolean(token && !isTokenExpired(token));
@@ -42,7 +57,7 @@ export function useHandleLogout() {
       await axios.post('https://educations-castle-sunch.ondigitalocean.app/api/v1/users/logout', {}, {
         headers: { Authorization: token },
       });
-      
+
       removeTokens();
       navigate('/login');
     } catch (error) {

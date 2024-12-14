@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -9,7 +10,6 @@ function Register() {
     email: ''
   });
 
-  const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -25,19 +25,21 @@ function Register() {
     try {
       const response = await axios.post('https://educations-castle-sunch.ondigitalocean.app/api/v1/users/register', formData);
 
-      if (response.status === 200) {
-        setMessage(`Registration successful: ${response.data.message}`);
+      if (response.status === 201) {
+        // Store the notification in localStorage
+        localStorage.setItem('notification', 'Registration successful!');
+        // Redirect to login
         navigate('/login');
       } else if (response.status === 400) {
-        setMessage(`${response.data.error}`);
+        toast.error(response.data.error);
       } else {
-        setMessage(`Registration failed: ${response.data.message}`);
+        toast.error(`Registration failed: ${response.data.message}`);
       }
     } catch (error) {
       if (error.response) {
-        setMessage(`Registration failed: ${error.response.data.message || error.response.data.error}`);
+        toast.error(`Registration failed: ${error.response.data.message || error.response.data.error}`);
       } else {
-        setMessage(`Registration failed: ${error.message}`);
+        toast.error(`Registration failed: ${error.message}`);
       }
     }
   };
@@ -83,7 +85,6 @@ function Register() {
           Register
         </button>
       </form>
-      {message && <p className="mt-4 text-center">{message}</p>}
     </div>
   );
 }
