@@ -18,7 +18,6 @@ const UserProfile = () => {
       try {
         const userId = getUserID();
         const accessToken = localStorage.getItem('accessToken');
-        console.log(accessToken);
         if (!userId) {
           console.error('User ID could not be retrieved.');
           return;

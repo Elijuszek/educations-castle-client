@@ -16,6 +16,7 @@ import Organizer from './components/Organizer';
 import ActivityDetail from './components/ActivityDetail';
 import UserProfile from './components/UserProfile';
 import PopularActivities from './components/PopularActivities';
+import CreatePackage from './components/CreatePackage';
 
 function App() {
   const [showWelcome, setShowWelcome] = useState(true);
@@ -71,6 +72,7 @@ function App() {
             <Route path="/organizer" element={<Organizer />} />
             <Route path="/activity/:id" element={<ActivityDetail />} />
             <Route path="/profile" element={<UserProfile />} />
+            <Route path="/packages/create" element={<CreatePackage />} />
           </Routes>
         </main>
         <Footer />

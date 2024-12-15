@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { toast, ToastContainer } from 'react-toastify'; // Import ToastContainer
+import 'react-toastify/dist/ReactToastify.css'; // Import the Toastify CSS
 import { getUserID } from '../utils/Auth';
 
 function Organizer() {
   const [packages, setPackages] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -15,7 +19,6 @@ function Organizer() {
         }
         
         const response = await axios.get(`https://educations-castle-sunch.ondigitalocean.app/api/v1/organizer/${userId}/packages`);
-        
         setPackages(response.data);
       } catch (error) {
         console.error('Error fetching packages:', error);
@@ -26,11 +29,38 @@ function Organizer() {
   }, []);
 
   const handleAddPackage = () => {
-    console.log('Add new package');
+    navigate('/packages/create');
+  };
+
+  const handleDeletePackage = async (packageId) => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      console.error('Access token could not be retrieved.');
+      return;
+    }
+
+    if (window.confirm('Are you sure you want to delete this package?')) {
+      try {
+        await axios.delete(
+          `https://educations-castle-sunch.ondigitalocean.app/api/v1/packages/delete/${packageId}`,
+          {
+            headers: {
+              Authorization: accessToken,
+            },
+          }
+        );
+        setPackages(packages.filter(pkg => pkg.id !== packageId)); // Remove package from list
+        toast.success('Package deleted successfully'); // Show success notification
+      } catch (error) {
+        console.error('Error deleting package:', error);
+        toast.error(`Error deleting package: ${error.message}`); // Show error notification
+      }
+    }
   };
 
   return (
     <div className="container mx-auto p-4">
+      <ToastContainer position="top-center" /> {/* Center notifications at the top */}
       <h1 className="text-3xl font-bold text-center my-4">Organizer Panel</h1>
       {packages.length > 0 ? (
         <div className="packages-container">
@@ -60,7 +90,12 @@ function Organizer() {
                   <td className="py-3 px-6 text-center">
                     <div className="flex item-center justify-center space-x-2">
                       <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded">Edit</button>
-                      <button className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Delete</button>
+                      <button
+                        onClick={() => handleDeletePackage(packageItem.id)}
+                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
