@@ -261,14 +261,6 @@ const UpdatePackage = () => {
                     />
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => removeActivity(index)}
-                  className="btn bg-red-500 hover:bg-red-700 text-white font-bold px-2 my-2 rounded flex items-center"
-                >
-                  <img src={removeIcon} alt="Remove" className="icon-white h-5 w-5 mr-2" />
-                  Remove Activity
-                </button>
               </div>
             )}
           </div>
