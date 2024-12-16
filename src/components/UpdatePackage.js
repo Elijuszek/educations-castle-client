@@ -1,47 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { getUserID } from '../utils/Auth';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import saveIcon from '../res/icons/save.svg';
-import addIcon from '../res/icons/add.svg';
 import removeIcon from '../res/icons/remove.svg';
 
-const CreatePackage = () => {
+// Mapping for category values
+const categoryMap = {
+  '1': 'Education',
+  '2': 'Event',
+  '3': 'Service',
+  '4': 'Other',
+};
+
+// Reverse mapping to convert back to numbers, if needed
+const reverseCategoryMap = {
+  'Education': '1',
+  'Event': '2',
+  'Service': '3',
+  'Other': '4',
+};
+
+const UpdatePackage = () => {
+  const { packageId } = useParams();
   const [packageData, setPackageData] = useState({
     name: '',
     price: '',
     description: '',
+    fk_Organizerid: null,
   });
 
-  const [activities, setActivities] = useState([{ 
-    name: '', 
-    description: '', 
-    basePrice: '', 
-    hidden: false, 
-    category: 'Education',
-    isVisible: true 
-  }]);
-
+  const [activities, setActivities] = useState([]);
   const categories = ['Education', 'Event', 'Service', 'Other'];
-
   const navigate = useNavigate();
+  const accessToken = localStorage.getItem('accessToken');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const packageResponse = await axios.get(`https://educations-castle-sunch.ondigitalocean.app/api/v1/packages/${packageId}`);
+        const activitiesResponse = await axios.get(`https://educations-castle-sunch.ondigitalocean.app/api/v1/packages/${packageId}/activities`);
+
+        setPackageData({
+          name: packageResponse.data.name,
+          price: packageResponse.data.price,
+          description: packageResponse.data.description,
+          fk_Organizerid: packageResponse.data.fk_Organizerid,
+        });
+
+        setActivities(activitiesResponse.data.map(activity => ({
+          ...activity,
+          category: categoryMap[activity.category] || activity.category,
+          isVisible: false,  // making all activities collapsed initially
+        })));
+      } catch (error) {
+        toast.error(`Error fetching package: ${error.response ? error.response.data : error.message}`);
+      }
+    };
+  
+    if (accessToken) {
+      fetchData();
+    } else {
+      toast.error('Access token could not be retrieved.');
+    }
+  }, [accessToken, packageId]);
 
   const handlePackageChange = (e) => {
     const { name, value } = e.target;
-    setPackageData({
-      ...packageData,
+    setPackageData(prevData => ({
+      ...prevData,
       [name]: value,
-    });
-  };
-
-  const handleActivityChange = (index, e) => {
-    const { name, value, type, checked } = e.target;
-    const newActivities = [...activities];
-    newActivities[index][name] = type === 'checkbox' ? checked : value;
-    setActivities(newActivities);
+    }));
   };
 
   const toggleActivityVisibility = (index) => {
@@ -50,11 +81,15 @@ const CreatePackage = () => {
     setActivities(newActivities);
   };
 
-  const addActivity = () => {
-    setActivities([
-      ...activities,
-      { name: '', description: '', basePrice: '', hidden: false, category: 'Education', isVisible: true },
-    ]);
+  const handleActivityChange = (index, e) => {
+    const { name, value, type, checked } = e.target;
+    const newActivities = [...activities];
+    if (name !== 'id') {
+      newActivities[index][name] = type === 'checkbox' ? checked : value;
+    } else {
+      newActivities[index][name] = parseInt(value, 10);
+    }
+    setActivities(newActivities);
   };
 
   const removeActivity = (index) => {
@@ -65,75 +100,52 @@ const CreatePackage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const userId = getUserID();
-      const accessToken = localStorage.getItem('accessToken');
-  
-      if (!userId) {
-        toast.error('User ID could not be retrieved.');
-        return;
-      }
-  
-      if (!accessToken) {
-        toast.error('Access token could not be retrieved.');
-        return;
-      }
-  
-      // Create the package first
-      const packageResponse = await axios.post(
-        'https://educations-castle-sunch.ondigitalocean.app/api/v1/packages/create',
-        {
-          name: packageData.name,
-          price: parseFloat(packageData.price),
-          description: packageData.description,
-          fk_Organizerid: parseInt(userId, 10),
+      // Update package
+      const updatedPackageData = {
+        name: packageData.name,
+        price: parseFloat(packageData.price),
+        description: packageData.description,
+        fk_Organizerid: packageData.fk_Organizerid, // Include fk_Organizerid
+      };
+      await axios.put(`https://educations-castle-sunch.ondigitalocean.app/api/v1/packages/update/${packageId}`, updatedPackageData, {
+        headers: {
+          Authorization: accessToken,
+          'Content-Type': 'application/json',
         },
-        {
+      });
+
+      // Ensure Fk_PackageId is passed as an integer
+      const intPackageId = parseInt(packageId, 10);
+
+      // Update activities with category as a string
+      for (const activity of activities) {
+        const activityData = {
+          name: activity.name,
+          description: activity.description,
+          basePrice: parseFloat(activity.basePrice),
+          Hidden: Boolean(activity.hidden), 
+          Category: reverseCategoryMap[activity.category],
+          Fk_PackageId: intPackageId, // Correct the casing to Fk_PackageId
+        };
+
+        await axios.put(`https://educations-castle-sunch.ondigitalocean.app/api/v1/activities/update/${activity.id}`, activityData, {
           headers: {
             Authorization: accessToken,
             'Content-Type': 'application/json',
           },
-        }
-      );
-  
-      if (packageResponse.status === 201) {
-        // If the package creation is successful, perform further actions
-        const packageId = packageResponse.data.package_id;
-      
-        // Create activities for the package
-        for (const activity of activities) {
-          await axios.post(
-            'https://educations-castle-sunch.ondigitalocean.app/api/v1/activities/create',
-            {
-              name: activity.name,
-              description: activity.description,
-              basePrice: parseFloat(activity.basePrice),
-              Hidden: Boolean(activity.hidden), 
-              Category: activity.category,
-              Fk_PackageID: packageId,
-            },
-            {
-              headers: {
-                Authorization: accessToken,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-        }
-  
-        toast.success('Package and activities created successfully!');
-        navigate('/organizer');
-      } else {
-        toast.error('Unexpected response while creating package');
+        });
       }
-  
+
+      toast.success('Package and activities updated successfully!');
+      navigate('/organizer');
     } catch (error) {
-      toast.error(`Error creating package or activities: ${error.response ? error.response.data : error.message}`);
+      toast.error(`Error updating package or activities: ${error.response ? error.response.data : error.message}`);
     }
   };
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center my-4">Create a New Package</h1>
+      <h1 className="text-3xl font-bold text-center my-4">Update Package</h1>
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
         <div className="flex mb-4">
           <div className="w-1/3 mr-2">
@@ -151,6 +163,7 @@ const CreatePackage = () => {
             <label className="block text-gray-700">Price:</label>
             <input
               type="number"
+              step="0.01"
               name="price"
               value={packageData.price}
               onChange={handlePackageChange}
@@ -179,7 +192,7 @@ const CreatePackage = () => {
               onClick={() => toggleActivityVisibility(index)}
             >
               <FontAwesomeIcon icon={activity.isVisible ? faChevronUp : faChevronDown} className="mr-2" />
-              <span>{activity.name || `New Activity ${index + 1}`}</span>
+              <span>{activity.name || `Activity ${index + 1}`}</span>
             </div>
 
             {activity.isVisible && (
@@ -260,14 +273,6 @@ const CreatePackage = () => {
             )}
           </div>
         ))}
-        <button
-          type="button"
-          onClick={addActivity}
-          className="btn bg-blue-500 hover:bg-blue-700 text-white font-bold px-4 mb-4 rounded flex items-center"
-        >
-          <img src={addIcon} alt="Add" className="icon-white h-5 w-5 mr-2" />
-          Add Activity
-        </button>
 
         <div className="flex justify-end">
           <button
@@ -275,7 +280,7 @@ const CreatePackage = () => {
             className="btn bg-green-500 hover:bg-green-700 text-white font-bold px-4 rounded flex items-center"
           >
             <img src={saveIcon} alt="Save" className="icon-white h-5 w-5 mr-2" />
-            Create
+            Save Updates
           </button>
         </div>
       </form>
@@ -283,4 +288,4 @@ const CreatePackage = () => {
   );
 };
 
-export default CreatePackage;
+export default UpdatePackage;

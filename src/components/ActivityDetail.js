@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import defaultImage from '../res/images/default.jpg'; // Import the default image
+import defaultImage from '../res/images/default.jpg';
+import { isAuthenticated, getRole, getUserID } from '../utils/Auth';
+import StarRating from './StarRating';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ActivityDetail = () => {
   const { id } = useParams();
   const [activity, setActivity] = useState(null);
-  const [reviews, setReviews] = useState([]); // State for reviews
+  const [reviews, setReviews] = useState([]);
+  const [newReview, setNewReview] = useState({ rating: 0, comment: '' }); // Set initial rating to 0
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const images = [defaultImage, defaultImage, defaultImage]; // Same image for illustration
+  const images = [defaultImage, defaultImage, defaultImage];
 
   useEffect(() => {
     const fetchActivity = async () => {
@@ -37,17 +42,67 @@ const ActivityDetail = () => {
   useEffect(() => {
     const intervalId = setInterval(() => {
       setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
-    }, 3000); // Switch image every 3 seconds
+    }, 3000);
 
     return () => clearInterval(intervalId);
   }, [images.length]);
 
+  const handleReviewChange = (e) => {
+    setNewReview({ ...newReview, [e.target.name]: e.target.value });
+  };
+
+  const handleRatingChange = (rating) => {
+    setNewReview({ ...newReview, rating });
+  };
+
+  const submitReview = async (e) => {
+    e.preventDefault();
+    const accessToken = localStorage.getItem('accessToken');
+    const userId = parseInt(getUserID(), 10);
+  
+    try {
+      const response = await axios.post(
+        'https://educations-castle-sunch.ondigitalocean.app/api/v1/reviews/create',
+        {
+          comment: newReview.comment,
+          rating: newReview.rating,
+          fk_Userid: userId,
+          fk_Activityid: parseInt(id, 10),
+        },
+        {
+          headers: {
+            Authorization: accessToken,
+          },
+        }
+      );
+  
+      console.log('Response:', response); // Log response for debugging
+      if (response.status === 200 || response.status === 201) { // Consider accepting status 201
+        setReviews([...reviews, { ...newReview, id: new Date().getTime(), date: new Date(), fk_Activityid: parseInt(id, 10) }]);
+        setNewReview({ rating: 1, comment: '' }); // Reset to initial state
+        toast.success('Review submitted successfully!', { position: "top-center" });
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error); // Log error for debugging
+      if (error.response && error.response.status === 422 && error.response.data.error.includes('already exists')) {
+        toast.error('You can only write one review per activity.', { position: "top-center" });
+      } else {
+        toast.error('Failed to submit review. Please try again.', { position: "top-center" });
+      }
+    }
+  };
+
   if (!activity) {
-    return <div></div>;
+    return <div>Loading...</div>;
   }
+
+  const isLoggedIn = isAuthenticated();
+  const userRole = getRole();
+  const canWriteReview = isLoggedIn && (userRole === 'user' || userRole === 'administrator');
 
   return (
     <div className="container mx-auto p-8 flex justify-center">
+      <ToastContainer />
       <div className="max-w-4xl bg-white shadow-md rounded-lg overflow-hidden">
         <div className="relative">
           <img
@@ -74,7 +129,7 @@ const ActivityDetail = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Review Section */}
         <div className="p-6 border-t border-gray-200">
           <h2 className="text-2xl font-bold mb-4">Reviews</h2>
@@ -88,6 +143,30 @@ const ActivityDetail = () => {
             ))
           ) : (
             <p>No reviews available for this activity.</p>
+          )}
+
+          {canWriteReview && (
+            <form onSubmit={submitReview} className="mt-8">
+              <h3 className="text-xl font-bold mb-4">Write a Review</h3>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Rating:</label>
+                <StarRating rating={newReview.rating} onRatingChange={handleRatingChange} />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Comment:</label>
+                <textarea
+                  name="comment"
+                  value={newReview.comment}
+                  onChange={handleReviewChange}
+                  className="border rounded p-2 w-full"
+                  rows="5"
+                  required
+                />
+              </div>
+              <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Submit Review
+              </button>
+            </form>
           )}
         </div>
       </div>

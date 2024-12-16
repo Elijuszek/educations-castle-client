@@ -17,7 +17,8 @@ import ActivityDetail from './components/ActivityDetail';
 import UserProfile from './components/UserProfile';
 import PopularActivities from './components/PopularActivities';
 import CreatePackage from './components/CreatePackage';
-
+import UpdatePackage from './components/UpdatePackage';
+import PackageDetail from './components/PackageDetail';
 function App() {
   const [showWelcome, setShowWelcome] = useState(true);
 
@@ -73,6 +74,8 @@ function App() {
             <Route path="/activity/:id" element={<ActivityDetail />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/packages/create" element={<CreatePackage />} />
+            <Route path="/package/update/:packageId" element={<UpdatePackage />} />
+            <Route path="/package/:packageId" element={<PackageDetail />} />
           </Routes>
         </main>
         <Footer />
